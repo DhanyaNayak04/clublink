@@ -85,7 +85,7 @@ function ClubForm({ onSuccess, club }) {
   return (
     <form onSubmit={handleSubmit}>
       {error && (
-        <div style={{ color: 'red', marginBottom: '15px', padding: '10px', backgroundColor: '#ffecec', borderRadius: '4px' }}>
+        <div style={{ color: 'red', marginBottom: '15px', padding: '10px', backgroundColor: '#fffbe7', borderRadius: '6px', border: '1px solid #af984c' }}>
           {error}
         </div>
       )}
@@ -156,13 +156,14 @@ function ClubForm({ onSuccess, club }) {
         type="submit"
         disabled={loading}
         style={{
-          padding: '10px 15px',
-          backgroundColor: loading ? '#cccccc' : '#4CAF50',
+          padding: '12px 22px',
+          background: loading ? '#cccccc' : 'linear-gradient(90deg, #af984c 0%, #000a28e6 100%)',
           color: 'white',
           border: 'none',
-          borderRadius: '4px',
+          borderRadius: '6px',
           cursor: loading ? 'not-allowed' : 'pointer',
-          fontSize: '16px'
+          fontSize: '16px',
+          boxShadow: '0 2px 8px 0 #af984c33'
         }}
       >
         {loading ? 'Creating...' : 'Create Club'}

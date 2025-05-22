@@ -10,7 +10,10 @@ function NotFound() {
       justifyContent: 'center', 
       height: '70vh',
       textAlign: 'center',
-      padding: '20px'
+      padding: '20px',
+      background: 'linear-gradient(135deg, #fff 60%, #af984c 100%)',
+      borderRadius: '18px',
+      boxShadow: '0 8px 32px 0 #000a28e6'
     }}>
       <h1 style={{ fontSize: '36px', marginBottom: '20px' }}>404</h1>
       <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Page Not Found</h2>

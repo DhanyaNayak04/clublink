@@ -30,7 +30,7 @@ function Header() {
 
   return (
     <header style={{ 
-      backgroundColor: '#1976d2', 
+      background: 'linear-gradient(90deg, #000a28e6 0%, #af984c 100%)', 
       color: 'white',
       padding: '0.5rem 1rem',
       display: 'flex', 

@@ -152,7 +152,14 @@ function AdminDashboard() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ 
+      padding: '24px', 
+      maxWidth: '1000px', 
+      margin: '0 auto',
+      background: 'linear-gradient(135deg, #fff 60%, #af984c 100%)',
+      borderRadius: '18px',
+      boxShadow: '0 8px 32px 0 #000a28e6'
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2>Admin Dashboard</h2>
         <LogoutButton />
@@ -166,7 +173,7 @@ function AdminDashboard() {
           onClick={() => setActiveTab('coordinator')} 
           style={{ 
             padding: '10px 20px', 
-            border: 'none', 
+            border: 'none',
             background: activeTab === 'coordinator' ? '#4CAF50' : '#f1f1f1',
             color: activeTab === 'coordinator' ? 'white' : 'black',
             cursor: 'pointer',

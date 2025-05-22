@@ -10,7 +10,7 @@ function EventModal({ event, onClose, onRegister, isRegistered, userRole }) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 10, 40, 0.92)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -42,8 +42,8 @@ function EventModal({ event, onClose, onRegister, isRegistered, userRole }) {
                 onClick={onRegister}
                 style={{
                   padding: '10px 15px',
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
+                  backgroundColor: '#ffd700',
+                  color: '#1a237e',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer',

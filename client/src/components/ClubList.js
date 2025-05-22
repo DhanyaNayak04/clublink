@@ -190,6 +190,18 @@ function SignUp() {
       <div style={{ marginTop: '1rem', textAlign: 'center' }}>
         <p>Already have an account? <Link to="/login" style={{ color: '#af984c' }}>Login here</Link></p>
       </div>
+
+      <div style={{
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: '20px',               // Consistent spacing between cards
+  padding: '20px',
+}}>
+  {clubs.map(club => (
+    <ClubCard key={club._id} club={club} /> // Or however your card component is structured
+  ))}
+</div>
     </div>
   );
 }

@@ -3,39 +3,57 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 
 function MainLayout({ children }) {
-  // Use the AuthContext directly to avoid any import issues
   const { isAuthenticated, user, logout } = useContext(AuthContext);
 
   return (
     <div className="main-layout">
       <header>
         <nav style={{ 
-          padding: '1rem', 
-          backgroundColor: '#2196F3', 
+          padding: '1rem 2rem', 
+          background: 'linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%)',
           color: 'white',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          boxShadow: 'var(--shadow)'
         }}>
+          {/* Home link on the left */}
           <div>
-            <Link to="/" style={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold' }}>
-              College Club Management
+            <Link to="/" style={{ 
+              color: 'white', 
+              fontSize: '1.2rem', 
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className="fas fa-home"></i> Home
             </Link>
           </div>
           
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link to="/" style={{ color: 'white' }}>Home</Link>
-            
+          {/* Login/Register or Dashboard/Logout on the right */}
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             {isAuthenticated && user ? (
               <>
-                <Link to={`/${user.role || 'student'}`} style={{ color: 'white' }}>Dashboard</Link>
+                <Link to={`/${user.role || 'student'}`} style={{ 
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--border-radius)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  transition: 'background 0.2s'
+                }}>
+                  Dashboard
+                </Link>
                 <button 
                   onClick={logout} 
                   style={{ 
-                    background: 'transparent', 
+                    background: 'rgba(255, 255, 255, 0.2)', 
                     border: 'none', 
                     color: 'white', 
-                    cursor: 'pointer' 
+                    cursor: 'pointer',
+                    padding: '6px 12px',
+                    borderRadius: 'var(--border-radius)',
+                    transition: 'background 0.2s'
                   }}
                 >
                   Logout
@@ -43,19 +61,33 @@ function MainLayout({ children }) {
               </>
             ) : (
               <>
-                <Link to="/login" style={{ color: 'white' }}>Login</Link>
-                <Link to="/register" style={{ color: 'white' }}>Register</Link>
+                <Link to="/login" style={{ 
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--border-radius)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  transition: 'background 0.2s'
+                }}>
+                  Login
+                </Link>
+                <Link to="/register" style={{ 
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--border-radius)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  transition: 'background 0.2s'
+                }}>
+                  Register
+                </Link>
               </>
             )}
           </div>
         </nav>
       </header>
       
-      <main style={{ padding: '1rem' }}>
+      <main style={{ padding: '1.5rem' }}>
         {children}
       </main>
-      
-      {/* Remove footer here since we're using the Footer component from App.js */}
     </div>
   );
 }

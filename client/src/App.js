@@ -12,17 +12,23 @@ import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import Footer from './components/Footer';
+import './App.css';
 
 // Header always visible
 function Header() {
   return (
-    <header style={{
-      backgroundColor: '#1976d2',
-      color: 'white',
-      padding: '1rem',
-      textAlign: 'center'
-    }}>
-      <h1>College Clubs Management</h1>
+    <header
+      style={{
+        background: 'linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%)',
+        color: 'white',
+        padding: '1.2rem',
+        textAlign: 'center',
+        boxShadow: 'var(--shadow)'
+      }}
+    >
+      <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700, letterSpacing: '1px' }}>
+        College Clubs Management
+      </h1>
     </header>
   );
 }
@@ -35,7 +41,8 @@ const appStyles = {
 
 const contentStyles = {
   flex: 1,
-  background: '#f6f8fa'
+  background: 'var(--light)',
+  paddingBottom: '2rem'
 };
 
 function App() {

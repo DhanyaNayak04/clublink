@@ -25,12 +25,15 @@ body {
 }
 
 a {
-  color: #2196F3;
+  color: #ffd700;
   text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
 }
 
 a:hover {
-  text-decoration: underline;
+  color: #fff;
+  text-shadow: 0 0 6px #ffd70099;
 }
 
 button {
@@ -41,4 +44,7 @@ button {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 15px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px 0 #1a237e22;
 }

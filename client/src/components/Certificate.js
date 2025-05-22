@@ -16,7 +16,7 @@ const Certificate = ({ student, event, onClose }) => {
         scale: 2, // Better resolution
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#fff'
       }).then(canvas => {
         try {
           const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -47,8 +47,8 @@ const Certificate = ({ student, event, onClose }) => {
   });
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', maxWidth: '90%', maxHeight: '90%', overflow: 'auto', position: 'relative' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(26,35,126,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ background: 'linear-gradient(135deg, #fff 60%, #ffd70022 100%)', padding: '20px', borderRadius: '18px', maxWidth: '90%', maxHeight: '90%', overflow: 'auto', position: 'relative', boxShadow: '0 8px 32px 0 #1a237e33' }}>
         <button 
           onClick={onClose}
           style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}
@@ -61,13 +61,14 @@ const Certificate = ({ student, event, onClose }) => {
           style={{ 
             width: '800px', 
             height: '550px', 
-            border: '12px solid #0d47a1', 
+            border: '12px solid #ffd700', 
             padding: '20px',
             boxSizing: 'border-box',
             textAlign: 'center',
             position: 'relative',
-            backgroundColor: '#f9f9f9',
-            margin: '20px auto'
+            background: 'linear-gradient(135deg, #fff 70%, #ffd70022 100%)',
+            margin: '20px auto',
+            boxShadow: '0 8px 32px 0 #ffd70033'
           }}
         >
           {/* Certificate Header */}
@@ -118,13 +119,15 @@ const Certificate = ({ student, event, onClose }) => {
           <button 
             onClick={generatePDF} 
             style={{ 
-              padding: '10px 20px', 
-              backgroundColor: '#4CAF50', 
+              padding: '12px 28px', 
+              background: 'linear-gradient(90deg, #512da8 0%, #ffd700 100%)', 
               color: 'white', 
               border: 'none', 
-              borderRadius: '4px', 
+              borderRadius: '6px', 
               cursor: 'pointer',
-              fontSize: '16px'
+              fontSize: '18px',
+              fontWeight: 'bold',
+              boxShadow: '0 2px 8px 0 #ffd70033'
             }}
           >
             Download Certificate

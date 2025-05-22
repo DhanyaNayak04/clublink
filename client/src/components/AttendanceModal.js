@@ -154,7 +154,7 @@ function AttendanceModal({ eventId, onClose }) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 10, 40, 0.92)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -255,7 +255,7 @@ function AttendanceModal({ eventId, onClose }) {
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#f44336',
-                  color: 'white',
+                  color: '#1a237e',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -268,7 +268,7 @@ function AttendanceModal({ eventId, onClose }) {
                 disabled={submitting || success}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: submitting || success ? '#cccccc' : '#4CAF50',
+                  backgroundColor: submitting || success ? '#cccccc' : 'linear-gradient(90deg, #512da8 0%, #ffd700 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',

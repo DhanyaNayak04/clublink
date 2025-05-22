@@ -3,98 +3,123 @@ import { useNavigate } from 'react-router-dom';
 
 function ClubCard({ club }) {
   const navigate = useNavigate();
-  
-  // For logo display - use default logo if logoUrl doesn't exist or fails to load
   const [logoError, setLogoError] = React.useState(false);
-  
-  // Default logo style
-  const logoStyle = {
-    width: 100,
-    height: 100,
-    objectFit: 'cover',
-    borderRadius: '8px',
-    marginBottom: '10px',
-    backgroundColor: '#f0f0f0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  };
   
   // Club initial for fallback logo
   const clubInitial = club.name ? club.name.charAt(0).toUpperCase() : 'C';
   
   return (
     <div style={{ 
-      border: '1px solid #e0e0e0', 
-      borderRadius: '10px',
-      margin: 10, 
-      padding: 15, 
-      width: 200,
+      width: '280px',            // Consistent width
+      height: '380px',           // Consistent height
+      borderRadius: '8px',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-      transition: 'transform 0.2s',
+      overflow: 'hidden',
+      transition: 'transform 0.3s ease, box-shadow 0.3s',
       cursor: 'pointer',
-      backgroundColor: 'white',
-      overflow: 'hidden'
+      background: 'white',
+      border: '1px solid #eaeaea',
     }}
     onClick={() => navigate(`/club/${club._id}`)}
-    onMouseOver={(e) => {e.currentTarget.style.transform = 'translateY(-5px)';}}
-    onMouseOut={(e) => {e.currentTarget.style.transform = 'translateY(0)';}}
+    onMouseOver={(e) => {
+      e.currentTarget.style.transform = 'translateY(-6px)';
+      e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+    }}
+    onMouseOut={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+    }}
     >
       {/* Logo with fallback */}
-      {!logoError && club.logoUrl ? (
-        <img 
-          src={`${process.env.REACT_APP_API_URL || ''}${club.logoUrl}`} 
-          alt={club.name}
-          style={logoStyle}
-          onError={() => setLogoError(true)} 
-        />
-      ) : (
-        <div style={{
-          ...logoStyle,
-          fontSize: '2.5rem',
-          fontWeight: 'bold',
-          color: '#555',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          {clubInitial}
-        </div>
-      )}
-      
-      {/* Club name */}
-      <h3 style={{ 
-        margin: '10px 0', 
-        fontSize: '1.2rem',
-        textAlign: 'center',
-        fontWeight: '600',
-        color: '#333'
+      <div style={{ 
+        height: '150px',
+        overflow: 'hidden',
       }}>
-        {club.name}
-      </h3>
+        {!logoError && club.logoUrl ? (
+          <img 
+            src={`${process.env.REACT_APP_API_URL || ''}${club.logoUrl}`} 
+            alt={club.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              borderRadius: '8px 8px 0 0',
+            }}
+            onError={() => setLogoError(true)} 
+          />
+        ) : (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#af984c',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '3rem',
+            fontWeight: 'bold',
+            borderRadius: '8px 8px 0 0',
+          }}>
+            {clubInitial}
+          </div>
+        )}
+      </div>
       
-      {/* View button */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent card click event
-          navigate(`/club/${club._id}`);
-        }}
-        style={{
-          padding: '8px 15px',
-          backgroundColor: '#1976d2',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontWeight: '500',
-          marginTop: '5px'
-        }}
-      >
-        View Club
-      </button>
+      <div style={{ padding: '15px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Club name */}
+        <h3 style={{ 
+          margin: '0 0 10px 0', 
+          fontSize: '1.2rem',
+          color: '#333',
+          textAlign: 'center',
+        }}>
+          {club.name}
+        </h3>
+        
+        {/* Club description */}
+        <div style={{ 
+          flex: 1,
+          overflow: 'auto',
+          fontSize: '0.9rem',
+          color: '#666',
+          lineHeight: '1.5',
+          marginBottom: '15px',
+        }}>
+          <p style={{ margin: 0 }}>
+            {club.description || 'No description available.'}
+          </p>
+        </div>
+        
+        {/* View button */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/club/${club._id}`);
+          }}
+          style={{
+            width: '100%',
+            padding: '10px',
+            backgroundColor: '#af984c',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: '600',
+            textAlign: 'center',
+            transition: 'background-color 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#8e7d3f';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#af984c';
+          }}
+        >
+          View Club
+        </button>
+      </div>
     </div>
   );
 }

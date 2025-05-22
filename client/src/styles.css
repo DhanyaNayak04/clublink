@@ -1,6 +1,7 @@
 .main-nav {
-  background-color: #333;
-  padding: 10px 0;
+  background: linear-gradient(90deg, #000a28e6 0%, #000a28e6 60%, #af984c 100%);
+  padding: 14px 0;
+  box-shadow: 0 4px 16px 0 #000a28e6;
 }
 
 .main-nav ul {
@@ -16,12 +17,18 @@
 }
 
 .main-nav a {
-  color: white;
+  color: #fff;
   text-decoration: none;
   font-weight: bold;
-  font-size: 1.1em;
+  font-size: 1.15em;
+  letter-spacing: 1px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
 }
 
 .main-nav a:hover {
-  color: #00b7ff;
+  background: #af984c;
+  color: #000a28e6;
+  box-shadow: 0 2px 8px 0 #af984c;
 }

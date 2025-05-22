@@ -79,7 +79,15 @@ function Register() {
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: '40px auto', padding: 20, border: '1px solid #ccc' }}>
+    <div style={{ 
+      maxWidth: 500, 
+      margin: '40px auto', 
+      padding: 28, 
+      borderRadius: 16,
+      background: 'linear-gradient(135deg, #fff 60%, #af984c 100%)',
+      boxShadow: '0 8px 32px 0 #000a28e6',
+      border: '2px solid #af984c'
+    }}>
       <h2>Register</h2>
       {error && <div style={{ color: 'red', marginBottom: 15 }}>{error}</div>}
       {success && <div style={{ color: 'green', marginBottom: 15 }}>{success}</div>}

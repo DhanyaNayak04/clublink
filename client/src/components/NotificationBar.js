@@ -34,7 +34,7 @@ function NotificationBar({ notifications }) {
 
   return (
     <div style={{ 
-      background: '#eee', 
+      background: '#000a28e6', 
       overflow: 'hidden', 
       whiteSpace: 'nowrap',
       marginBottom: 20,
@@ -54,9 +54,9 @@ function NotificationBar({ notifications }) {
             style={{ 
               marginRight: 30, 
               cursor: 'pointer', 
-              color: 'blue',
+              color: '#af984c',
               display: 'inline-block',
-              background: '#f1f9ff',
+              background: 'linear-gradient(90deg, #af984c 60%, #000a28e6 100%)',
               padding: '5px 10px',
               borderRadius: '15px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)'

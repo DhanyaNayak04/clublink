@@ -266,7 +266,14 @@ function CoordinatorDashboard() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ 
+      padding: '24px', 
+      maxWidth: '800px', 
+      margin: '0 auto',
+      background: 'linear-gradient(135deg, #fff 60%, #ffd70022 100%)',
+      borderRadius: '18px',
+      boxShadow: '0 8px 32px 0 #1a237e22'
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2>Coordinator Dashboard</h2>
         <LogoutButton />

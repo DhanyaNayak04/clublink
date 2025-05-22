@@ -15,7 +15,7 @@ function LogoutButton({ style }) {
 
   const buttonStyle = {
     padding: '8px 15px',
-    backgroundColor: '#f44336',
+    background: 'linear-gradient(90deg, #af984c 0%, #000a28e6 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '4px',

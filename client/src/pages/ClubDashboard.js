@@ -78,17 +78,17 @@ function ClubDashboard() {
   // console.log('User:', user, 'RegistrationStatus:', registrationStatus);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '50px' }}>Loading club details...</div>;
+    return <div style={{ textAlign: 'center', padding: '50px', color: '#af984c' }}>Loading club details...</div>;
   }
 
   if (error) {
     return (
-      <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ padding: '20px', maxWidth: '800px' }}>
         <div style={{ color: 'red', padding: '15px', backgroundColor: '#ffeeee', borderRadius: '5px' }}>
           {error}
         </div>
         <div style={{ marginTop: '20px' }}>
-          <button onClick={() => navigate('/')} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>← Go to Home</button>
+          <button onClick={() => navigate('/')} style={{ color: ' #af984c', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>← Go to Home</button>
         </div>
       </div>
     );
@@ -101,42 +101,53 @@ function ClubDashboard() {
           Club not found or has been removed.
         </div>
         <div style={{ marginTop: '20px' }}>
-          <button onClick={() => navigate('/')} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>← Go to Home</button>
+          <button onClick={() => navigate('/')} style={{ color: '#af984c', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>← Go to Home</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ 
+      padding: '24px', 
+      maxWidth: '800px', 
+      margin: '0 auto',
+      background: 'linear-gradient(135deg, #fff 60%, #ffd70022 100%)',
+      borderRadius: '18px',
+      boxShadow: '0 8px 32px 0 #1a237e22'
+    }}>
       <div style={{ marginBottom: '20px' }}>
-        <button onClick={() => navigate('/')} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>← Go to Home</button>
+        <button onClick={() => navigate('/')} style={{ color: '#af984c', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>← Go to Home</button>
       </div>
       <div style={{
         display: 'flex',
+        flexDirection: 'row', // Ensure horizontal layout on larger screens
         alignItems: 'flex-start',
         marginBottom: '30px',
         backgroundColor: '#f9f9f9',
         padding: '20px',
-        borderRadius: '8px'
+        borderRadius: '8px',
+        flexWrap: 'wrap' // Allow wrapping on smaller screens
       }}>
         {/* Club Logo or Initial */}
         <div style={{
-          width: '100px',
+          minWidth: '100px',
           height: '100px',
           backgroundColor: '#e0e0e0',
           borderRadius: '8px',
           marginRight: '20px',
+          marginBottom: '15px', // Add margin bottom for when it wraps
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'center', 
           justifyContent: 'center',
           fontSize: '42px',
           fontWeight: 'bold',
-          color: '#555'
+          color: '#555',
+          flexShrink: 0 // Prevent the logo from shrinking
         }}>
           {club.logoUrl ? (
             <img
-              src={club.logoUrl}
+              src={`${process.env.REACT_APP_API_URL || ''}${club.logoUrl}`}
               alt={`${club.name} logo`}
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
               onError={e => {
@@ -149,7 +160,7 @@ function ClubDashboard() {
             club.name.charAt(0)
           )}
         </div>
-        <div>
+        <div style={{ flex: '1', minWidth: '200px' }}>
           <h1 style={{ margin: '0 0 10px 0', fontSize: '28px' }}>{club.name}</h1>
           {club.department && (
             <p style={{ margin: '0 0 5px 0', fontSize: '16px' }}>
@@ -157,7 +168,7 @@ function ClubDashboard() {
             </p>
           )}
           <div style={{ margin: '15px 0' }}>
-            <p style={{ fontSize: '16px', lineHeight: '1.5' }}>{club.description || 'No description available.'}</p>
+            <p style={{ fontSize: '16px', lineHeight: '1.5', wordBreak: 'break-word' }}>{club.description || 'No description available.'}</p>
           </div>
         </div>
       </div>

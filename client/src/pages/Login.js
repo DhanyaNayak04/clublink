@@ -45,10 +45,18 @@ function Login() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '40px auto', padding: 20, border: '1px solid #ccc' }}>
+    <div style={{ 
+      maxWidth: 400, 
+      margin: '40px auto', 
+      padding: 28, 
+      borderRadius: 16,
+      background: 'linear-gradient(135deg, #fff 60%, #af984c 100%)',
+      boxShadow: '0 8px 32px 0 #000a28e6',
+      border: '2px solid #af984c'
+    }}>
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ textAlign: 'center', margin: 0 }}>Login</h2>
-        <Link to="/" style={{ color: '#2196F3', textDecoration: 'none' }}>← Go to Home</Link>
+        <h2 style={{ textAlign: 'center', margin: 0, color: '#512da8', fontWeight: 700 }}>Login</h2>
+        <Link to="/" style={{ color: '#af984c', textDecoration: 'none' }}>← Go to Home</Link>
       </div>
       
       {error && (
@@ -101,7 +109,7 @@ function Login() {
           style={{
             width: '100%',
             padding: '0.75rem',
-            backgroundColor: '#2196F3',
+            backgroundColor: '#af984c', // Changed from '#2196F3' to green
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -114,7 +122,7 @@ function Login() {
       </form>
       
       <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-        <p>Don't have an account? <Link to="/signup" style={{ color: '#2196F3' }}>Sign up here</Link></p>
+        <p>Don't have an account? <Link to="/signup" style={{ color: '#af984c' }}>Sign up here</Link></p>
       </div>
     </div>
   );
