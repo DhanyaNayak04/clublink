@@ -96,7 +96,22 @@ function StudentDashboard() {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2>Student Dashboard</h2>
-        <LogoutButton />
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => navigate('/')}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#af984c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Go to Home
+          </button>
+          <LogoutButton />
+        </div>
       </div>
       
       {error && (
