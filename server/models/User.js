@@ -44,7 +44,14 @@ const userSchema = new mongoose.Schema({
   registeredEvents: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event'
-  }]
+  }],
+  contactNumber: {
+    type: String,
+    trim: true
+  },
+  profilePic: {
+    type: String // URL or path to profile picture
+  }
 }, { timestamps: true });
 
 // Add a virtual getter to ensure we always have a club reference

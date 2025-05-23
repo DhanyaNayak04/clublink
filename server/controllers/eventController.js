@@ -459,3 +459,22 @@ exports.submitAttendance = async (req, res) => {
     res.status(500).json({ message: 'Error submitting attendance' });
   }
 };
+
+// Add this function for /api/events/recent
+exports.getRecentEvents = async (req, res) => {
+  try {
+    // Get latest 10 approved, non-venue-request events (not just notifications)
+    const events = await Event.find({
+      isVenueRequest: false,
+      venueApproved: true
+    })
+    .populate('club', 'name')
+    .sort({ date: -1 }) // Most recent events first
+    .limit(10);
+
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching recent events:', error);
+    res.status(500).json({ message: 'Error fetching recent events' });
+  }
+};

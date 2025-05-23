@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const { sendMail } = require('../utils/mailer');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 
 exports.getCoordinatorRequests = async (req, res) => {
   try {
@@ -171,5 +173,20 @@ exports.getMyEvents = async (req, res) => {
   } catch (error) {
     console.error('Error fetching user events:', error);
     res.status(500).json({ message: 'Error fetching events' });
+  }
+};
+
+exports.uploadProfilePic = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const user = req.user;
+    // Save relative path or URL from multer
+    user.profilePic = `/uploads/profile-pics/${req.file.filename}`;
+    await user.save();
+    res.json({ profilePicUrl: user.profilePic });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to upload profile picture' });
   }
 };

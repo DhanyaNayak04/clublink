@@ -12,6 +12,7 @@ function StudentDashboard() {
   const [error, setError] = useState(null);
   const [showCertificate, setShowCertificate] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -81,6 +82,42 @@ function StudentDashboard() {
     }
   }, [location.search, events, handleViewCertificate]);
 
+  // Add effect to update preview if profile.profilePic changes
+  useEffect(() => {
+    if (profile.profilePic) {
+      const apiBase = process.env.REACT_APP_API_URL || '';
+      setProfilePicPreview(
+        profile.profilePic.startsWith('http')
+          ? profile.profilePic
+          : apiBase + profile.profilePic
+      );
+    }
+  }, [profile.profilePic]);
+
+  // Handler for profile picture upload
+  const handleProfilePicChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfilePicPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    try {
+      const formData = new FormData();
+      formData.append('profilePic', file);
+      const res = await api.post('/api/users/upload-profile-pic', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setProfile(prev => ({ ...prev, profilePic: res.data.profilePicUrl }));
+    } catch (err) {
+      alert('Failed to upload profile picture');
+    }
+  };
+
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '50px', color: '#af984c' }}>Loading...</div>;
   }
@@ -121,7 +158,7 @@ function StudentDashboard() {
       )}
       
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '30px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-        {/* Use a default avatar instead of trying to load from profile */}
+        {/* Profile picture upload */}
         <div 
           style={{ 
             width: 80, 
@@ -133,10 +170,30 @@ function StudentDashboard() {
             justifyContent: 'center', 
             marginRight: 20,
             fontSize: '2em',
-            color: '#555'
+            color: '#555',
+            position: 'relative'
           }}
         >
-          {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
+          <img
+            src={profilePicPreview || '/default-profile.png'}
+            alt="Profile"
+            style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }}
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleProfilePicChange}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: 80,
+              height: 80,
+              opacity: 0,
+              cursor: 'pointer'
+            }}
+            title="Upload profile picture"
+          />
         </div>
         <div>
           <h3 style={{ margin: '0 0 10px 0' }}>{profile.name}</h3>

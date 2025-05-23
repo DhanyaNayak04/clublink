@@ -4,6 +4,60 @@ import LogoutButton from '../components/LogoutButton';
 import AttendanceModal from '../components/AttendanceModal';
 import Certificate from '../components/Certificate';
 
+// Add CoordinatorProfile inline (or import if you move to a separate file)
+function CoordinatorProfile({ profile, onProfilePicChange }) {
+  const apiBase = process.env.REACT_APP_API_URL || '';
+  const [profilePicPreview, setProfilePicPreview] = useState(
+    profile.profilePic
+      ? profile.profilePic.startsWith('http')
+        ? profile.profilePic
+        : apiBase + profile.profilePic
+      : null
+  );
+
+  // Update preview if profile.profilePic changes (e.g., after refresh)
+  React.useEffect(() => {
+    if (profile.profilePic) {
+      setProfilePicPreview(
+        profile.profilePic.startsWith('http')
+          ? profile.profilePic
+          : apiBase + profile.profilePic
+      );
+    }
+  }, [profile.profilePic, apiBase]);
+
+  const handlePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicPreview(reader.result);
+        onProfilePicChange(file, reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div style={{ padding: 24, background: '#f9f9f9', borderRadius: 8, maxWidth: 400, margin: '0 auto' }}>
+      <h2 style={{ marginBottom: 20 }}>My Profile</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+        <img
+          src={profilePicPreview || '/default-profile.png'}
+          alt="Profile"
+          style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', marginBottom: 10, border: '2px solid #af984c' }}
+        />
+        <input type="file" accept="image/*" onChange={handlePicChange} />
+      </div>
+      <div>
+        <p><strong>Name:</strong> {profile.name}</p>
+        <p><strong>Contact Number:</strong> {profile.contactNumber || '-'}</p>
+        <p><strong>Email:</strong> {profile.email}</p>
+      </div>
+    </div>
+  );
+}
+
 function CoordinatorDashboard() {
   const [events, setEvents] = useState([]);
   const [venueRequest, setVenueRequest] = useState({
@@ -30,6 +84,9 @@ function CoordinatorDashboard() {
   const [attendanceEventId, setAttendanceEventId] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedEventForCertificate, setSelectedEventForCertificate] = useState(null);
+  const [activeTab, setActiveTab] = useState('club');
+  // Add profile state
+  const [profile, setProfile] = useState({});
 
   const fetchVenueRequests = async () => {
     try {
@@ -80,6 +137,7 @@ function CoordinatorDashboard() {
       try {
         // Get user profile first to access club ID
         const userProfileRes = await api.get('/api/users/me');
+        setProfile(userProfileRes.data);
         console.log('Coordinator profile:', userProfileRes.data);
         
         // Check if club is associated
@@ -265,6 +323,20 @@ function CoordinatorDashboard() {
     setShowAttendanceModal(true);
   };
 
+  // Handler for profile picture upload
+  const handleProfilePicChange = async (file, preview) => {
+    try {
+      const formData = new FormData();
+      formData.append('profilePic', file);
+      const res = await api.post('/api/users/upload-profile-pic', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setProfile(prev => ({ ...prev, profilePic: res.data.profilePicUrl }));
+    } catch (err) {
+      alert('Failed to upload profile picture');
+    }
+  };
+
   return (
     <div style={{ 
       padding: '24px', 
@@ -279,7 +351,91 @@ function CoordinatorDashboard() {
         <LogoutButton />
       </div>
 
-      {club && (
+      {/* Tabs navigation */}
+      <div style={{ display: 'flex', marginBottom: '20px', borderBottom: '1px solid #ddd' }}>
+        <button
+          onClick={() => setActiveTab('profile')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'profile' ? '#af984c' : '#f1f1f1',
+            color: activeTab === 'profile' ? 'white' : 'black',
+            cursor: 'pointer',
+            borderTopLeftRadius: '5px',
+            borderTopRightRadius: '5px',
+            marginRight: '5px'
+          }}
+        >
+          My Profile
+        </button>
+        <button
+          onClick={() => setActiveTab('club')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'club' ? '#af984c' : '#f1f1f1',
+            color: activeTab === 'club' ? 'white' : 'black',
+            cursor: 'pointer',
+            borderTopLeftRadius: '5px',
+            borderTopRightRadius: '5px',
+            marginRight: '5px'
+          }}
+        >
+          Club Info
+        </button>
+        <button
+          onClick={() => setActiveTab('venue')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'venue' ? '#af984c' : '#f1f1f1',
+            color: activeTab === 'venue' ? 'white' : 'black',
+            cursor: 'pointer',
+            borderTopLeftRadius: '5px',
+            borderTopRightRadius: '5px',
+            marginRight: '5px'
+          }}
+        >
+          Venue Requests
+        </button>
+        <button
+          onClick={() => setActiveTab('post')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'post' ? '#af984c' : '#f1f1f1',
+            color: activeTab === 'post' ? 'white' : 'black',
+            cursor: 'pointer',
+            borderTopLeftRadius: '5px',
+            borderTopRightRadius: '5px',
+            marginRight: '5px'
+          }}
+        >
+          Post Event
+        </button>
+        <button
+          onClick={() => setActiveTab('events')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'events' ? '#af984c' : '#f1f1f1',
+            color: activeTab === 'events' ? 'white' : 'black',
+            cursor: 'pointer',
+            borderTopLeftRadius: '5px',
+            borderTopRightRadius: '5px'
+          }}
+        >
+          My Events
+        </button>
+      </div>
+
+      {/* My Profile Tab */}
+      {activeTab === 'profile' && (
+        <CoordinatorProfile profile={profile} onProfilePicChange={handleProfilePicChange} />
+      )}
+
+      {/* Club Info Tab */}
+      {activeTab === 'club' && club && (
         <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3>Your Club: {club.name}</h3>
@@ -287,7 +443,7 @@ function CoordinatorDashboard() {
               onClick={() => setEditingClub(!editingClub)}
               style={{ 
                 padding: '5px 10px', 
-                backgroundColor: '#2196F3', 
+                backgroundColor: '#af984c', 
                 color: 'white', 
                 border: 'none', 
                 borderRadius: '4px',
@@ -297,7 +453,6 @@ function CoordinatorDashboard() {
               {editingClub ? 'Cancel' : 'Edit Description'}
             </button>
           </div>
-          
           {editingClub ? (
             <form onSubmit={handleUpdateClubDescription}>
               <div style={{ marginTop: '10px', marginBottom: '10px' }}>
@@ -309,7 +464,6 @@ function CoordinatorDashboard() {
                   required
                 ></textarea>
               </div>
-              
               <button
                 type="submit"
                 style={{ 
@@ -333,110 +487,124 @@ function CoordinatorDashboard() {
         </div>
       )}
 
-      <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
-        <h3>Request for Venue</h3>
-        <form onSubmit={handleVenueRequest}>
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Event Name:</label>
-            <input
-              style={{ width: '100%', padding: '8px' }}
-              type="text"
-              name="eventName"
-              value={venueRequest.eventName}
-              onChange={handleVenueRequestChange}
-              required
-            />
+      {/* Venue Requests Tab */}
+      {activeTab === 'venue' && (
+        <div>
+          <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
+            <h3>Request for Venue</h3>
+            <form onSubmit={handleVenueRequest}>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px' }}>Event Name:</label>
+                <input
+                  style={{ width: '100%', padding: '8px' }}
+                  type="text"
+                  name="eventName"
+                  value={venueRequest.eventName}
+                  onChange={handleVenueRequestChange}
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px' }}>Venue:</label>
+                <input
+                  style={{ width: '100%', padding: '8px' }}
+                  type="text"
+                  name="venue"
+                  value={venueRequest.venue}
+                  onChange={handleVenueRequestChange}
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px' }}>Date:</label>
+                <input
+                  style={{ width: '100%', padding: '8px' }}
+                  type="date"
+                  name="eventDate"
+                  value={venueRequest.eventDate}
+                  onChange={handleVenueRequestChange}
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '5px' }}>From:</label>
+                  <input
+                    style={{ width: '100%', padding: '8px' }}
+                    type="time"
+                    name="timeFrom"
+                    value={venueRequest.timeFrom}
+                    onChange={handleVenueRequestChange}
+                    required
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '5px' }}>To:</label>
+                  <input
+                    style={{ width: '100%', padding: '8px' }}
+                    type="time"
+                    name="timeTo"
+                    value={venueRequest.timeTo}
+                    onChange={handleVenueRequestChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
+                <textarea
+                  style={{ width: '100%', padding: '8px', height: '100px' }}
+                  name="eventDescription"
+                  value={venueRequest.eventDescription}
+                  onChange={handleVenueRequestChange}
+                  required
+                ></textarea>
+              </div>
+              <button
+                style={{ padding: '10px 15px', backgroundColor: '#4CAF50', color: 'white', border: 'none', cursor: 'pointer' }}
+                type="submit"
+              >
+                Request Venue
+              </button>
+            </form>
           </div>
-
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Venue:</label>
-            <input
-              style={{ width: '100%', padding: '8px' }}
-              type="text"
-              name="venue"
-              value={venueRequest.venue}
-              onChange={handleVenueRequestChange}
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Date:</label>
-            <input
-              style={{ width: '100%', padding: '8px' }}
-              type="date"
-              name="eventDate"
-              value={venueRequest.eventDate}
-              onChange={handleVenueRequestChange}
-              required
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>From:</label>
-              <input
-                style={{ width: '100%', padding: '8px' }}
-                type="time"
-                name="timeFrom"
-                value={venueRequest.timeFrom}
-                onChange={handleVenueRequestChange}
-                required
-              />
+          {pendingVenueRequests.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+              <h3>Pending Venue Requests</h3>
+              <ul style={{ listStyleType: 'none', padding: 0 }}>
+                {pendingVenueRequests.map(req => (
+                  <li key={req._id} style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
+                    <strong>{req.eventName}</strong> at {req.venue} on {new Date(req.eventDate).toLocaleDateString()}
+                    <span style={{ marginLeft: '10px', color: 'orange', fontWeight: 'bold' }}>
+                      Pending
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>To:</label>
-              <input
-                style={{ width: '100%', padding: '8px' }}
-                type="time"
-                name="timeTo"
-                value={venueRequest.timeTo}
-                onChange={handleVenueRequestChange}
-                required
-              />
+          )}
+          {approvedVenues.length > 0 && (
+            <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9fff9' }}>
+              <h3>Approved Venues</h3>
+              <ul style={{ listStyleType: 'none', padding: 0 }}>
+                {approvedVenues.map(venue => (
+                  <li key={venue._id} style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
+                    <strong>{venue.eventName}</strong> at {venue.venue} on {new Date(venue.eventDate).toLocaleDateString()}
+                    <span style={{ marginLeft: '10px', color: 'green', fontWeight: 'bold' }}>
+                      Approved
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
-            <textarea
-              style={{ width: '100%', padding: '8px', height: '100px' }}
-              name="eventDescription"
-              value={venueRequest.eventDescription}
-              onChange={handleVenueRequestChange}
-              required
-            ></textarea>
-          </div>
-
-          <button
-            style={{ padding: '10px 15px', backgroundColor: '#4CAF50', color: 'white', border: 'none', cursor: 'pointer' }}
-            type="submit"
-          >
-            Request Venue
-          </button>
-        </form>
-      </div>
-
-      {pendingVenueRequests.length > 0 && (
-        <div style={{ marginBottom: '30px' }}>
-          <h3>Pending Venue Requests</h3>
-          <ul style={{ listStyleType: 'none', padding: 0 }}>
-            {pendingVenueRequests.map(req => (
-              <li key={req._id} style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <strong>{req.eventName}</strong> at {req.venue} on {new Date(req.eventDate).toLocaleDateString()}
-                <span style={{ marginLeft: '10px', color: 'orange', fontWeight: 'bold' }}>
-                  Pending
-                </span>
-              </li>
-            ))}
-          </ul>
+          )}
         </div>
       )}
 
-      {approvedVenues.length > 0 && (
+      {/* Post Event Tab */}
+      {activeTab === 'post' && approvedVenues.length > 0 && (
         <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9fff9' }}>
-          <h3>Approved Venues - Post Event</h3>
-          <p>These venues have been approved and are ready for you to post events.</p>
+          <h3>Post Event (Approved Venues)</h3>
           <form onSubmit={handlePostEvent}>
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px' }}>Select Approved Venue:</label>
@@ -455,7 +623,6 @@ function CoordinatorDashboard() {
                 ))}
               </select>
             </div>
-
             <div style={{ marginBottom: '10px' }}>
               <label style={{ display: 'block', marginBottom: '5px' }}>Title:</label>
               <input
@@ -467,7 +634,6 @@ function CoordinatorDashboard() {
                 required
               />
             </div>
-
             <div style={{ marginBottom: '10px' }}>
               <label style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
               <textarea
@@ -478,7 +644,6 @@ function CoordinatorDashboard() {
                 required
               ></textarea>
             </div>
-
             <div style={{ marginBottom: '10px' }}>
               <label style={{ display: 'block', marginBottom: '5px' }}>Date & Time (Optional - defaults to venue request):</label>
               <input
@@ -489,7 +654,6 @@ function CoordinatorDashboard() {
                 onChange={handleEventFormChange}
               />
             </div>
-
             <button
               style={{ padding: '10px 15px', backgroundColor: '#2196F3', color: 'white', border: 'none', cursor: 'pointer' }}
               type="submit"
@@ -499,67 +663,72 @@ function CoordinatorDashboard() {
           </form>
         </div>
       )}
+      {activeTab === 'post' && approvedVenues.length === 0 && (
+        <div style={{ padding: '20px', color: '#888' }}>
+          No approved venues available. Please request and wait for venue approval.
+        </div>
+      )}
 
-      <div>
-        <h3>My Published Events</h3>
-        {events.length === 0 ? (
-          <p>No events published yet. Request venue approval and post events.</p>
-        ) : (
-          <ul style={{ listStyleType: 'none', padding: 0 }}>
-            {events.map(event => (
-              <li key={event._id} style={{ padding: '15px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '5px' }}>
-                <h4>{event.title}</h4>
-                <p><strong>Date:</strong> {new Date(event.date).toLocaleString()}</p>
-                <p><strong>Venue:</strong> {event.venue}</p>
-
-                {/* Take Attendance Button */}
-                {!event.attendanceCompleted && (
-                  <button
-                    onClick={() => handleAttendance(event._id)}
-                    style={{
-                      padding: '8px 12px',
-                      backgroundColor: '#FF5722',
-                      color: 'white',
-                      border: 'none',
-                      cursor: 'pointer',
+      {/* My Events Tab */}
+      {activeTab === 'events' && (
+        <div>
+          <h3>My Published Events</h3>
+          {events.length === 0 ? (
+            <p>No events published yet. Request venue approval and post events.</p>
+          ) : (
+            <ul style={{ listStyleType: 'none', padding: 0 }}>
+              {events.map(event => (
+                <li key={event._id} style={{ padding: '15px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '5px' }}>
+                  <h4>{event.title}</h4>
+                  <p><strong>Date:</strong> {new Date(event.date).toLocaleString()}</p>
+                  <p><strong>Venue:</strong> {event.venue}</p>
+                  {/* Take Attendance Button */}
+                  {!event.attendanceCompleted && (
+                    <button
+                      onClick={() => handleAttendance(event._id)}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#FF5722',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        marginTop: '10px',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      Take Attendance
+                    </button>
+                  )}
+                  {event.attendanceCompleted && (
+                    <span style={{
+                      display: 'inline-block',
                       marginTop: '10px',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    Take Attendance
-                  </button>
-                )}
-                
-                {event.attendanceCompleted && (
-                  <span style={{
-                    display: 'inline-block',
-                    marginTop: '10px',
-                    color: 'green',
-                    fontWeight: 'bold'
-                  }}>
-                    Attendance Completed ✓
-                  </span>
-                )}
+                      color: 'green',
+                      fontWeight: 'bold'
+                    }}>
+                      Attendance Completed ✓
+                    </span>
+                  )}
+                  {/* Display registered students for the event */}
+                  {event.registrations && event.registrations.length > 0 && (
+                    <div style={{ marginTop: '10px', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
+                      <strong>Registered Students:</strong>
+                      <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
+                        {event.registrations.map(student => (
+                          <li key={student._id} style={{ padding: '5px 0' }}>
+                            {student.name} ({student.email})
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
-                {/* Display registered students for the event */}
-                {event.registrations && event.registrations.length > 0 && (
-                  <div style={{ marginTop: '10px', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
-                    <strong>Registered Students:</strong>
-                    <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-                      {event.registrations.map(student => (
-                        <li key={student._id} style={{ padding: '5px 0' }}>
-                          {student.name} ({student.email})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      
       {/* Certificate Modal */}
       {showCertificate && selectedStudent && selectedEventForCertificate && (
         <Certificate 
@@ -568,7 +737,6 @@ function CoordinatorDashboard() {
           onClose={() => setShowCertificate(false)}
         />
       )}
-      
       {/* Attendance Modal */}
       {showAttendanceModal && attendanceEventId && (
         <AttendanceModal 

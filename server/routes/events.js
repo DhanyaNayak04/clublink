@@ -8,6 +8,7 @@ console.log('Events router loaded');
 // Public routes
 router.get('/notifications', eventController.getNotifications);
 router.get('/club/:clubId', eventController.getEventsByClub);
+router.get('/recent', eventController.getRecentEvents); // Use new controller for recent events
 
 // Protected routes
 router.use(auth);

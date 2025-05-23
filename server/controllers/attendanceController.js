@@ -2,6 +2,7 @@ const Event = require('../models/Event');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const { sendMail } = require('../utils/mailer');
+const Certificate = require('../models/Certificate');
 
 // Get attendees for an event
 exports.getEventAttendees = async (req, res) => {
@@ -20,8 +21,7 @@ exports.getEventAttendees = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
     
-    // FIXED: Relax authorization check - allow any coordinator to view attendees
-    // The original code was checking if the coordinator created the event
+    // Allow any coordinator to view attendees
     if (req.user.role !== 'admin' && req.user.role !== 'coordinator') {
       return res.status(403).json({ message: 'Not authorized to view attendees' });
     }
@@ -31,14 +31,20 @@ exports.getEventAttendees = async (req, res) => {
       _id: { $in: event.participants } 
     }).select('_id name email department');
     
-    // Format for response
-    const formattedAttendees = attendees.map(student => ({
-      _id: student._id,
-      name: student.name,
-      email: student.email,
-      department: student.department || 'N/A',
-      present: false // Default to not present
-    }));
+    // Format for response - include attendance status if available
+    const formattedAttendees = attendees.map(student => {
+      const registration = event.registrations?.find(
+        reg => reg.userId && reg.userId.toString() === student._id.toString()
+      );
+      
+      return {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        department: student.department || 'N/A',
+        present: registration?.attended || false // Use existing attendance data if available
+      };
+    });
     
     res.json(formattedAttendees);
   } catch (error) {
@@ -47,7 +53,7 @@ exports.getEventAttendees = async (req, res) => {
   }
 };
 
-// Mark attendance for a student
+// Mark attendance for a student without finalizing
 exports.markAttendance = async (req, res) => {
   try {
     const { eventId, studentId } = req.params;
@@ -63,32 +69,39 @@ exports.markAttendance = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
     
-    // CRITICAL FIX: Allow any coordinator to mark attendance
-    // This is less restrictive than the current check
+    // Allow any coordinator to mark attendance
     if (req.user.role !== 'admin' && req.user.role !== 'coordinator') {
       return res.status(403).json({ message: 'Not authorized to mark attendance' });
     }
     
-    // Check if student is registered (fix - use toString() for proper comparison)
-    const studentRegistered = event.registrations.some(
-      reg => reg.userId && reg.userId.toString() === studentId
-    );
+    // If attendance is already completed, don't allow changes
+    if (event.attendanceCompleted) {
+      return res.status(400).json({ message: 'Attendance is already finalized for this event' });
+    }
     
-    if (!studentRegistered) {
+    // Check if student is registered
+    const isStudentRegistered = event.participants.some(id => id.toString() === studentId);
+    if (!isStudentRegistered) {
       return res.status(404).json({ message: 'Student not registered for this event' });
     }
     
-    // Update the attendance status
+    // Update or create registration record
+    if (!event.registrations) event.registrations = [];
+    
     const registrationIndex = event.registrations.findIndex(
       reg => reg.userId && reg.userId.toString() === studentId
     );
     
     if (registrationIndex === -1) {
-      return res.status(404).json({ message: 'Student registration not found' });
+      // Create new registration record
+      event.registrations.push({
+        userId: studentId,
+        attended: present
+      });
+    } else {
+      // Update existing record
+      event.registrations[registrationIndex].attended = present;
     }
-    
-    // Set attendance status
-    event.registrations[registrationIndex].attended = present;
     
     await event.save();
     res.json({ message: 'Attendance marked successfully' });
@@ -98,7 +111,7 @@ exports.markAttendance = async (req, res) => {
   }
 };
 
-// Submit attendance for an event
+// Submit attendance for an event and generate certificates
 exports.submitAttendance = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -113,9 +126,14 @@ exports.submitAttendance = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
     
-    // FIX: Relax authorization check to allow ANY coordinator to submit attendance
+    // Allow any coordinator to submit attendance
     if (req.user.role !== 'admin' && req.user.role !== 'coordinator') {
       return res.status(403).json({ message: 'Not authorized to submit attendance' });
+    }
+    
+    // Check if attendance is already completed
+    if (event.attendanceCompleted) {
+      return res.status(400).json({ message: 'Attendance has already been submitted for this event' });
     }
     
     // Update attendance for all students
@@ -123,22 +141,95 @@ exports.submitAttendance = async (req, res) => {
       const { userId, present } = attendee;
       
       const registrationIndex = event.registrations.findIndex(
-        reg => reg.userId.toString() === userId
+        reg => reg.userId && reg.userId.toString() === userId
       );
       
       if (registrationIndex !== -1) {
         event.registrations[registrationIndex].attended = present;
+      } else if (present) {
+        // If student is present but no registration exists, create one
+        event.registrations.push({
+          userId: userId,
+          attended: true
+        });
+      }
+    }
+    
+    // Generate certificates for students marked as present
+    let certificatesGenerated = 0;
+    let clubName = '';
+    
+    // Get club name for certificate
+    if (event.club) {
+      try {
+        const club = await mongoose.model('Club').findById(event.club);
+        clubName = club ? club.name : '';
+      } catch (err) {
+        console.error('Error getting club name:', err);
+      }
+    }
+    
+    // Find all students marked as present
+    const presentStudents = event.registrations.filter(reg => reg.attended);
+    
+    // Generate certificates for present students
+    for (const registration of presentStudents) {
+      try {
+        const certificateId = `CERT-${event._id.toString().slice(-6)}-${registration.userId.toString().slice(-6)}`;
+        
+        // Check if certificate already exists
+        let certificate = await Certificate.findOne({ 
+          event: eventId, 
+          student: registration.userId 
+        });
+        
+        if (!certificate) {
+          // Create new certificate
+          certificate = new Certificate({
+            event: eventId,
+            student: registration.userId,
+            certificateId,
+            issuedDate: new Date(),
+            emailSent: false
+          });
+          await certificate.save();
+          certificatesGenerated++;
+          
+          // Send email notification
+          const student = await User.findById(registration.userId);
+          if (student && student.email) {
+            try {
+              const subject = `Certificate for ${event.title}`;
+              const text = `Dear ${student.name},
+
+Congratulations on your participation in "${event.title}" organized by ${clubName || 'our club'}.
+
+Your certificate has been generated and is available in your student dashboard.
+Certificate ID: ${certificateId}
+
+Best regards,
+Club Management System`;
+
+              await sendMail(student.email, subject, text);
+              certificate.emailSent = true;
+              await certificate.save();
+            } catch (emailErr) {
+              console.error('Error sending certificate email:', emailErr);
+            }
+          }
+        }
+      } catch (certErr) {
+        console.error('Error generating certificate:', certErr);
       }
     }
     
     // Mark attendance as completed
     event.attendanceCompleted = true;
-    
     await event.save();
     
     res.json({ 
-      message: 'Attendance submitted successfully',
-      certificatesGenerated: attendees.filter(a => a.present).length
+      message: 'Attendance submitted and certificates generated successfully',
+      certificatesGenerated 
     });
   } catch (error) {
     console.error('Error submitting attendance:', error);
