@@ -47,8 +47,8 @@ const contentStyles = {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <AuthProvider>
+      <Router>
         <div style={appStyles}>
           <Header />
           <div style={contentStyles}>
@@ -83,8 +83,8 @@ function App() {
           </div>
           <Footer />
         </div>
-      </AuthProvider>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }
 

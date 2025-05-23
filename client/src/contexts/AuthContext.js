@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api';
 
 const AuthContext = createContext();
@@ -18,45 +18,53 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    // Check if user is logged in on component mount
+    const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
+      if (token) {
+        let userData = localStorage.getItem('user');
+        if (userData) {
+          setUser(JSON.parse(userData));
+          setIsAuthenticated(true);
+        } else {
+          // Fetch user from API if not in localStorage
+          try {
+            const res = await api.get('/api/users/me');
+            setUser(res.data);
+            setIsAuthenticated(true);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          } catch {
+            setUser(null);
+            setIsAuthenticated(false);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        }
       }
-      try {
-        const response = await api.get('/api/users/me');
-        setUser(response.data);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        localStorage.removeItem('token');
-      } finally {
-        setLoading(false);
-      }
+      setLoading(false);
     };
-    checkAuthStatus();
+    checkAuth();
   }, []);
 
   const login = async (email, password, role) => {
     try {
-      const response = await api.post('/auth/login', { email, password, role });
+      const response = await api.post('/api/auth/login', { email, password, role });
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
-        if (response.data.user) {
-          setUser(response.data.user);
-          setIsAuthenticated(true);
-        } else {
-          const userResponse = await api.get('/api/users/me');
-          setUser(userResponse.data);
-          setIsAuthenticated(true);
-        }
+        // Always fetch user after login for consistency
+        const userRes = await api.get('/api/users/me');
+        setUser(userRes.data);
+        setIsAuthenticated(true);
+        localStorage.setItem('user', JSON.stringify(userRes.data));
         return response.data;
       } else {
         throw new Error('Invalid response from server - missing token');
       }
     } catch (error) {
-      console.error('Login failed:', error);
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       throw error;
     }
   };
@@ -66,13 +74,13 @@ export function AuthProvider({ children }) {
       const response = await api.post('/auth/register', userData);
       return response.data;
     } catch (error) {
-      console.error('Registration failed:', error);
       throw error;
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
   };

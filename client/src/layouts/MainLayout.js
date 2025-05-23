@@ -1,9 +1,18 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // Use the hook instead of direct context
 
 function MainLayout({ children }) {
-  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout } = useAuth(); // Use the hook
+
+  // Determine dashboard path based on user role
+  const dashboardPath = user && user.role
+    ? user.role === 'admin'
+      ? '/admin'
+      : user.role === 'coordinator'
+        ? '/coordinator'
+        : '/student'
+    : '/dashboard';
 
   return (
     <div className="main-layout">
@@ -35,7 +44,7 @@ function MainLayout({ children }) {
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             {isAuthenticated && user ? (
               <>
-                <Link to={`/${user.role || 'student'}`} style={{ 
+                <Link to={dashboardPath} style={{ 
                   color: 'white',
                   padding: '6px 12px',
                   borderRadius: 'var(--border-radius)',

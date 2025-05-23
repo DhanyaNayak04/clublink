@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 
-function AttendanceModal({ eventId, onClose }) {
+function AttendanceModal({ eventId, onClose, generateCertificates = false }) {
   const [attendees, setAttendees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
+  const [attendanceSaved, setAttendanceSaved] = useState(false);
 
   useEffect(() => {
     const fetchAttendees = async () => {
@@ -14,35 +15,44 @@ function AttendanceModal({ eventId, onClose }) {
         setLoading(true);
         console.log(`Fetching attendees for event: ${eventId}`);
         
-        // FIXED: Make sure we're getting the registrations instead of attendees
-        // This provides the registered students, not the attendance records
-        const response = await api.get(`/api/events/${eventId}/registrations`, {
+        // First try to fetch existing attendance data
+        const attendanceResponse = await api.get(`/api/attendance/event/${eventId}/attendees`, {
           headers: { 
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
         
-        // Transform the response to match the expected attendees format
-        const formattedAttendees = response.data.map(student => ({
-          _id: student._id,
-          name: student.name,
-          email: student.email,
-          department: student.department || 'N/A',
-          present: false // Default to not present
-        }));
-        
-        console.log('Attendees data:', formattedAttendees);
-        setAttendees(formattedAttendees);
+        console.log('Attendees data:', attendanceResponse.data);
+        setAttendees(attendanceResponse.data);
         setError('');
       } catch (err) {
         console.error('Error fetching attendees:', err);
-        if (err.response && err.response.status === 403) {
-          setError('You are not authorized to view attendees for this event. Please contact support.');
-        } else {
-          const errorMsg = err.response?.data?.message || 'Failed to load attendees list';
-          setError(`${errorMsg} (${err.message})`);
+        try {
+          // If no attendance data yet, fetch registrations
+          const response = await api.get(`/api/events/${eventId}/registrations`, {
+            headers: { 
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          // Transform the response to match the expected attendees format
+          const formattedAttendees = response.data.map(student => ({
+            _id: student._id,
+            name: student.name,
+            email: student.email,
+            department: student.department || 'N/A',
+            present: false // Default to not present
+          }));
+          
+          console.log('Registration data:', formattedAttendees);
+          setAttendees(formattedAttendees);
+          setError('');
+        } catch (regErr) {
+          console.error('Error fetching registrations:', regErr);
+          const errorMsg = regErr.response?.data?.message || 'Failed to load attendees list';
+          setError(`${errorMsg} (${regErr.message})`);
+          setAttendees([]);
         }
-        setAttendees([]);
       } finally {
         setLoading(false);
       }
@@ -63,7 +73,6 @@ function AttendanceModal({ eventId, onClose }) {
         attendee._id === userId ? { ...attendee, present: isPresent } : attendee
       ));
       
-      // Debug the request being sent
       console.log(`Marking attendance for student ${userId} in event ${eventId} as ${isPresent ? 'present' : 'absent'}`);
       
       const token = localStorage.getItem('token');
@@ -71,9 +80,8 @@ function AttendanceModal({ eventId, onClose }) {
         throw new Error('Authentication token not found');
       }
       
-      // Fix: Use the events endpoint instead of attendance endpoint which isn't working
-      await api.post(`/api/events/${eventId}/mark-attendance`, {
-        studentId: userId,
+      // Call the attendance API endpoint
+      await api.post(`/api/attendance/event/${eventId}/student/${userId}`, {
         present: isPresent
       }, {
         headers: {
@@ -86,7 +94,6 @@ function AttendanceModal({ eventId, onClose }) {
     } catch (err) {
       console.error('Error marking attendance:', err);
       
-      // More detailed error logging to debug the issue
       if (err.response) {
         console.error('Error response:', err.response.status, err.response.data);
       }
@@ -97,6 +104,45 @@ function AttendanceModal({ eventId, onClose }) {
       setAttendees(attendees.map(attendee => 
         attendee._id === userId ? { ...attendee, present: !isPresent } : attendee
       ));
+    }
+  };
+
+  const handleSaveAttendance = async () => {
+    try {
+      setSubmitting(true);
+      setError('');
+      
+      // Create a payload with the attendance data
+      const attendanceData = {
+        attendees: attendees.map(a => ({
+          userId: a._id,
+          present: a.present === true
+        }))
+      };
+
+      console.log('Saving attendance data without generating certificates:', attendanceData);
+
+      // Only save attendance, don't finalize or generate certificates
+      await Promise.all(attendees.map(async (attendee) => {
+        if (attendee.present !== undefined) {
+          await api.post(`/api/attendance/event/${eventId}/student/${attendee._id}`, {
+            present: attendee.present
+          }, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+        }
+      }));
+      
+      setAttendanceSaved(true);
+      setSuccess('Attendance saved successfully. You can close this window or continue marking attendance.');
+      
+    } catch (err) {
+      console.error('Error saving attendance:', err);
+      setError(err.response?.data?.message || 'Failed to save attendance');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -122,17 +168,17 @@ function AttendanceModal({ eventId, onClose }) {
         }))
       };
 
-      console.log('Submitting attendance data:', attendanceData);
+      console.log('Submitting final attendance data with certificate generation:', attendanceData);
 
-      // Fix: Change the API endpoint to match the server-side route
-      const response = await api.post(`/api/events/${eventId}/submit-attendance`, attendanceData, {
+      // Submit final attendance and generate certificates
+      const response = await api.post(`/api/attendance/submit/${eventId}`, attendanceData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
       console.log('Attendance submission response:', response.data);
-      setSuccess(`Attendance submitted successfully! ${response.data.certificatesGenerated || 0} certificates will be generated.`);
+      setSuccess(`Attendance submitted successfully! ${response.data.certificatesGenerated || 0} certificates will be generated and sent via email.`);
       
       // After successful submission, close the modal after a delay
       setTimeout(() => {
@@ -170,7 +216,9 @@ function AttendanceModal({ eventId, onClose }) {
         overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0 }}>Take Attendance</h2>
+          <h2 style={{ margin: 0 }}>
+            {generateCertificates ? 'Generate Certificates' : 'Take Attendance'}
+          </h2>
           <button
             onClick={onClose}
             style={{
@@ -215,7 +263,9 @@ function AttendanceModal({ eventId, onClose }) {
         ) : (
           <>
             <p style={{ marginBottom: '15px' }}>
-              Mark attendance for each student. Certificates will be sent to students marked as present.
+              {generateCertificates 
+                ? 'Finalize attendance and generate certificates. Certificates will be sent to students marked as present.' 
+                : 'Mark attendance for each student. You can save progress and come back later.'}
             </p>
             
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -254,29 +304,52 @@ function AttendanceModal({ eventId, onClose }) {
                 onClick={onClose}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#f44336',
-                  color: '#1a237e',
-                  border: 'none',
+                  backgroundColor: '#f5f5f5',
+                  color: '#333',
+                  border: '1px solid #ddd',
                   borderRadius: '4px',
                   cursor: 'pointer',
                 }}
               >
-                Cancel
+                Close
               </button>
-              <button
-                onClick={handleSubmitAttendance}
-                disabled={submitting || success}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: submitting || success ? '#cccccc' : 'linear-gradient(90deg, #512da8 0%, #ffd700 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: submitting || success ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {submitting ? 'Submitting...' : success ? 'Submitted ✓' : 'Submit Attendance & Send Certificates'}
-              </button>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {!generateCertificates && (
+                  <button
+                    onClick={handleSaveAttendance}
+                    disabled={submitting}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: submitting ? '#cccccc' : '#2196F3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: submitting ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {submitting ? 'Saving...' : attendanceSaved ? 'Save Again' : 'Save Attendance'}
+                  </button>
+                )}
+                
+                {generateCertificates && (
+                  <button
+                    onClick={handleSubmitAttendance}
+                    disabled={submitting || success}
+                    style={{
+                      padding: '10px 20px',
+                      background: submitting || success ? '#cccccc' : '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: submitting || success ? 'not-allowed' : 'pointer',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {submitting ? 'Submitting...' : success ? 'Submitted ✓' : 'Submit & Generate Certificates'}
+                  </button>
+                )}
+              </div>
             </div>
           </>
         )}
