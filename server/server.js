@@ -77,6 +77,7 @@ const eventsRouter = require('./routes/events');
 const userRoutes = require('./routes/users');
 const attendanceRoutes = require('./routes/attendance');
 const adminRoutes = require('./routes/admin');
+const certificatesRouter = require('./routes/certificates');  // Added certificates router
 
 // Apply routes
 app.use('/api/auth', authRoutes);
@@ -85,6 +86,7 @@ app.use('/api/events', eventsRouter);
 app.use('/api/users', userRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/certificates', certificatesRouter);  // Added certificates route
 
 // Handle missing API routes
 app.use('/api/*', (req, res) => {

@@ -1,240 +1,224 @@
 const Event = require('../models/Event');
-const User = require('../models/User');
-const mongoose = require('mongoose');
-const { sendMail } = require('../utils/mailer');
+const Attendance = require('../models/Attendance');
+const AttendanceProgress = require('../models/AttendanceProgress');
 const Certificate = require('../models/Certificate');
+const User = require('../models/User');
+const { sendMail } = require('../utils/mailer');
 
-// Get attendees for an event
+// Get all attendees for an event
 exports.getEventAttendees = async (req, res) => {
   try {
     const { eventId } = req.params;
-    console.log(`Getting attendees for event ${eventId}, requested by user:`, req.user._id, req.user.role);
 
-    // Validate eventId
-    if (!mongoose.Types.ObjectId.isValid(eventId)) {
-      return res.status(400).json({ message: 'Invalid event ID' });
-    }
+    // First check if we have any saved attendance data
+    const savedProgress = await AttendanceProgress.findOne({
+      eventId,
+      coordinatorId: req.user.id
+    });
 
-    // Get the event with populated participants
-    const event = await Event.findById(eventId);
+    // Find the event and populate participants (users)
+    // FIX: Only populate 'participants', not 'registrations.user'
+    const event = await Event.findById(eventId).populate('participants', 'name email department');
+
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
-    
-    // Allow any coordinator to view attendees
-    if (req.user.role !== 'admin' && req.user.role !== 'coordinator') {
-      return res.status(403).json({ message: 'Not authorized to view attendees' });
+
+    // Extract attendees from participants
+    let attendees = event.participants.map(user => ({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+      present: false // Default to not present
+    }));
+
+    // If we have saved progress, apply that to our attendees
+    if (savedProgress && savedProgress.attendees.length > 0) {
+      const savedStatus = {};
+      savedProgress.attendees.forEach(att => {
+        savedStatus[att.userId.toString()] = att.present;
+      });
+
+      attendees = attendees.map(att => ({
+        ...att,
+        present: savedStatus[att._id.toString()] || false
+      }));
     }
-    
-    // Fetch participants with details
-    const attendees = await User.find({ 
-      _id: { $in: event.participants } 
-    }).select('_id name email department');
-    
-    // Format for response - include attendance status if available
-    const formattedAttendees = attendees.map(student => {
-      const registration = event.registrations?.find(
-        reg => reg.userId && reg.userId.toString() === student._id.toString()
-      );
-      
-      return {
-        _id: student._id,
-        name: student.name,
-        email: student.email,
-        department: student.department || 'N/A',
-        present: registration?.attended || false // Use existing attendance data if available
-      };
+
+    // Include event title in response
+    res.json({
+      attendees,
+      event: {
+        title: event.title,
+        _id: event._id
+      }
     });
-    
-    res.json(formattedAttendees);
   } catch (error) {
     console.error('Error fetching attendees:', error);
-    res.status(500).json({ message: 'Error fetching attendees' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// Mark attendance for a student without finalizing
+// Mark attendance for a specific student
 exports.markAttendance = async (req, res) => {
   try {
     const { eventId, studentId } = req.params;
     const { present } = req.body;
     
-    // Validate input
-    if (present === undefined) {
-      return res.status(400).json({ message: 'Attendance status (present) is required' });
-    }
-    
+    // Find the event
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
     
-    // Allow any coordinator to mark attendance
-    if (req.user.role !== 'admin' && req.user.role !== 'coordinator') {
-      return res.status(403).json({ message: 'Not authorized to mark attendance' });
-    }
-    
-    // If attendance is already completed, don't allow changes
-    if (event.attendanceCompleted) {
-      return res.status(400).json({ message: 'Attendance is already finalized for this event' });
-    }
-    
-    // Check if student is registered
-    const isStudentRegistered = event.participants.some(id => id.toString() === studentId);
-    if (!isStudentRegistered) {
-      return res.status(404).json({ message: 'Student not registered for this event' });
-    }
-    
-    // Update or create registration record
-    if (!event.registrations) event.registrations = [];
-    
-    const registrationIndex = event.registrations.findIndex(
-      reg => reg.userId && reg.userId.toString() === studentId
+    // Update or create attendance record
+    const attendance = await Attendance.findOneAndUpdate(
+      { event: eventId, user: studentId },
+      { present, markedBy: req.user.id },
+      { new: true, upsert: true }
     );
     
-    if (registrationIndex === -1) {
-      // Create new registration record
-      event.registrations.push({
-        userId: studentId,
-        attended: present
-      });
-    } else {
-      // Update existing record
-      event.registrations[registrationIndex].attended = present;
-    }
-    
-    await event.save();
-    res.json({ message: 'Attendance marked successfully' });
+    res.json(attendance);
   } catch (error) {
     console.error('Error marking attendance:', error);
-    res.status(500).json({ message: 'Error marking attendance' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// Submit attendance for an event and generate certificates
+// Submit attendance for the entire event
 exports.submitAttendance = async (req, res) => {
   try {
     const { eventId } = req.params;
     const { attendees } = req.body;
-    
-    if (!attendees || !Array.isArray(attendees)) {
-      return res.status(400).json({ message: 'Invalid attendees data' });
+
+    // Validate attendees array
+    if (!Array.isArray(attendees) || attendees.some(a => !a.userId || typeof a.present !== 'boolean')) {
+      return res.status(400).json({ message: 'Invalid attendees data. Each attendee must have userId and present (boolean).' });
     }
-    
-    const event = await Event.findById(eventId);
+
+    // Find the event
+    const event = await Event.findById(eventId).populate('club', 'name');
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
-    
-    // Allow any coordinator to submit attendance
-    if (req.user.role !== 'admin' && req.user.role !== 'coordinator') {
-      return res.status(403).json({ message: 'Not authorized to submit attendance' });
-    }
-    
-    // Check if attendance is already completed
+
+    // Prevent re-submission
     if (event.attendanceCompleted) {
       return res.status(400).json({ message: 'Attendance has already been submitted for this event' });
     }
-    
-    // Update attendance for all students
-    for (const attendee of attendees) {
-      const { userId, present } = attendee;
-      
-      const registrationIndex = event.registrations.findIndex(
-        reg => reg.userId && reg.userId.toString() === userId
+
+    // Check if user has permission to submit attendance
+    if (event.coordinator.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to submit attendance for this event' });
+    }
+
+    // Process each attendee
+    const attendancePromises = attendees.map(async ({ userId, present }) => {
+      // Use 'student' field for Attendance model, not 'user'
+      await Attendance.findOneAndUpdate(
+        { event: eventId, student: userId },
+        { present, markedBy: req.user.id, submittedAt: Date.now() },
+        { new: true, upsert: true }
       );
-      
-      if (registrationIndex !== -1) {
-        event.registrations[registrationIndex].attended = present;
-      } else if (present) {
-        // If student is present but no registration exists, create one
-        event.registrations.push({
-          userId: userId,
-          attended: true
-        });
-      }
-    }
-    
-    // Generate certificates for students marked as present
-    let certificatesGenerated = 0;
-    let clubName = '';
-    
-    // Get club name for certificate
-    if (event.club) {
-      try {
-        const club = await mongoose.model('Club').findById(event.club);
-        clubName = club ? club.name : '';
-      } catch (err) {
-        console.error('Error getting club name:', err);
-      }
-    }
-    
-    // Find all students marked as present
-    const presentStudents = event.registrations.filter(reg => reg.attended);
-    
-    // Generate certificates for present students
-    for (const registration of presentStudents) {
-      try {
-        const certificateId = `CERT-${event._id.toString().slice(-6)}-${registration.userId.toString().slice(-6)}`;
-        
-        // Check if certificate already exists
-        let certificate = await Certificate.findOne({ 
-          event: eventId, 
-          student: registration.userId 
-        });
-        
-        if (!certificate) {
-          // Create new certificate
-          certificate = new Certificate({
+
+      // Generate certificate if present
+      if (present) {
+        let cert = await Certificate.findOne({ event: eventId, user: userId });
+        if (!cert) {
+          cert = new Certificate({
             event: eventId,
-            student: registration.userId,
-            certificateId,
-            issuedDate: new Date(),
-            emailSent: false
+            user: userId,
+            generatedBy: req.user.id,
+            fileUrl: '' // Optionally set file URL if you generate a file
           });
-          await certificate.save();
-          certificatesGenerated++;
-          
-          // Send email notification
-          const student = await User.findById(registration.userId);
-          if (student && student.email) {
-            try {
-              const subject = `Certificate for ${event.title}`;
-              const text = `Dear ${student.name},
+          await cert.save();
 
-Congratulations on your participation in "${event.title}" organized by ${clubName || 'our club'}.
-
-Your certificate has been generated and is available in your student dashboard.
-Certificate ID: ${certificateId}
-
-Best regards,
-Club Management System`;
-
-              await sendMail(student.email, subject, text);
-              certificate.emailSent = true;
-              await certificate.save();
-            } catch (emailErr) {
-              console.error('Error sending certificate email:', emailErr);
+          // Send certificate email
+          try {
+            const student = await User.findById(userId);
+            if (student && student.email) {
+              await sendMail(
+                student.email,
+                `Certificate for ${event.title}`,
+                `Congratulations! Your certificate for participating in "${event.title}" organized by ${event.club?.name || 'the club'} is now available in your dashboard.`
+              );
             }
+          } catch (emailErr) {
+            console.error('Failed to send certificate email:', emailErr);
           }
         }
-      } catch (certErr) {
-        console.error('Error generating certificate:', certErr);
       }
-    }
-    
-    // Mark attendance as completed
+    });
+
+    await Promise.all(attendancePromises);
+
+    // Mark event attendance as submitted
     event.attendanceCompleted = true;
+    event.attendanceSubmittedAt = Date.now();
     await event.save();
-    
-    res.json({ 
-      message: 'Attendance submitted and certificates generated successfully',
-      certificatesGenerated 
+
+    // Remove any saved progress after submission
+    await AttendanceProgress.findOneAndDelete({
+      eventId,
+      coordinatorId: req.user.id
+    });
+
+    res.json({
+      message: 'Attendance submitted successfully and certificates generated.',
+      event: event._id
     });
   } catch (error) {
-    console.error('Error submitting attendance:', error);
-    res.status(500).json({ message: 'Error submitting attendance' });
+    console.error('Error submitting attendance:', error, error.stack, req.body);
+    res.status(500).json({ message: 'Server error submitting attendance', error: error.message });
   }
 };
 
-module.exports = exports;
+// Save attendance progress for later completion
+exports.saveAttendanceProgress = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { attendees } = req.body;
+    
+    // Save the current attendance progress
+    await AttendanceProgress.findOneAndUpdate(
+      { 
+        eventId,
+        coordinatorId: req.user.id 
+      },
+      {
+        eventId,
+        coordinatorId: req.user.id,
+        attendees,
+        updatedAt: Date.now()
+      },
+      { new: true, upsert: true }
+    );
+    
+    res.json({ message: 'Attendance progress saved' });
+  } catch (error) {
+    console.error('Error saving attendance progress:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Get saved attendance data
+exports.getSavedAttendance = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    
+    const savedProgress = await AttendanceProgress.findOne({
+      eventId,
+      coordinatorId: req.user.id
+    });
+    
+    if (!savedProgress) {
+      return res.json({ attendees: [] });
+    }
+    
+    res.json({ attendees: savedProgress.attendees });
+  } catch (error) {
+    console.error('Error getting saved attendance:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

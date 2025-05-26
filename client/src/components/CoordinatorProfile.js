@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const CoordinatorProfile = ({ coordinator }) => {
+const CoordinatorProfile = ({ coordinator, onProfilePicChange }) => {
   const apiBase = process.env.REACT_APP_API_URL || '';
   const [profilePic, setProfilePic] = useState(
     coordinator.profilePic
@@ -26,7 +26,9 @@ const CoordinatorProfile = ({ coordinator }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfilePic(reader.result);
-        // TODO: Save the new profile picture to backend/server
+        if (onProfilePicChange) {
+          onProfilePicChange(file, reader.result);
+        }
       };
       reader.readAsDataURL(file);
     }

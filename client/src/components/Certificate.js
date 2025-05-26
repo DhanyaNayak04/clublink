@@ -46,6 +46,10 @@ const Certificate = ({ student, event, onClose }) => {
     day: 'numeric'
   });
 
+  // Generate a certificate ID if one doesn't exist
+  const certificateId = student.certificateId || student._id || 
+    `CERT-${event._id?.substring(0, 6)}-${student._id?.substring(0, 6)}`;
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(26,35,126,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div style={{ background: 'linear-gradient(135deg, #fff 60%, #ffd70022 100%)', padding: '20px', borderRadius: '18px', maxWidth: '90%', maxHeight: '90%', overflow: 'auto', position: 'relative', boxShadow: '0 8px 32px 0 #1a237e33' }}>
@@ -110,7 +114,7 @@ const Certificate = ({ student, event, onClose }) => {
               </div>
             </div>
             <div style={{ marginTop: '30px', fontSize: '12px', color: '#666' }}>
-              Issued on {currentDate} • Certificate ID: {student._id?.substring(0, 8) || 'CERT-12345'}
+              Issued on {currentDate} • Certificate ID: {certificateId}
             </div>
           </div>
         </div>

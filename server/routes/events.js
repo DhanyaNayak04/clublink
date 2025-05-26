@@ -25,8 +25,8 @@ router.get('/my', eventController.getMyEvents);
 router.post('/request-venue', eventController.requestVenue);
 router.get('/venue-requests', eventController.getMyVenueRequests);
 
-// Add these new routes for attendance
-router.post('/:eventId/mark-attendance', auth, eventController.markAttendance);
-router.post('/:eventId/submit-attendance', auth, eventController.submitAttendance);
+// Remove these duplicate routes as they're now in the attendance router
+// router.post('/:eventId/mark-attendance', auth, eventController.markAttendance);
+// router.post('/:eventId/submit-attendance', auth, eventController.submitAttendance);
 
 module.exports = router;

@@ -1,19 +1,34 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
-const attendanceController = require('../controllers/attendanceController');
-const auth = require('../middleware/auth');
 const usersRouter = require('./routes/users');
+const certificatesRouter = require('./routes/certificates');
+const attendanceRouter = require('./routes/attendance');
+const eventsRouter = require('./routes/events');
 
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Serve static files
 app.use('/uploads', express.static('uploads'));
+
+// API routes
 app.use('/api/users', usersRouter);
+app.use('/api/certificates', certificatesRouter);
+app.use('/api/attendance', attendanceRouter);
+app.use('/api/events', eventsRouter);
 
-// Get attendees for an event - ensure this is correctly registered
-router.get('/event/:eventId/attendees', auth, attendanceController.getEventAttendees);
+// Handle 404 routes
+app.use((req, res) => {
+  res.status(404).send(`<h1>404 - Route not found: ${req.originalUrl}</h1>`);
+});
 
-// Mark attendance for a student
-router.post('/event/:eventId/student/:studentId', auth, attendanceController.markAttendance);
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
 
-// Submit attendance for an event
-router.post('/submit/:eventId', auth, attendanceController.submitAttendance);
-
-module.exports = router;
+// Export the app itself, not a router
+module.exports = app;

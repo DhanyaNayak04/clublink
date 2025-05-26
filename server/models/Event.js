@@ -61,6 +61,9 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  attendanceSubmittedAt: {
+    type: Date
+  },
   registrationDeadline: {
     type: Date,
     required: false // Optional, but recommended to set

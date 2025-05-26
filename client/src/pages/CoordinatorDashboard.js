@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api';
+import { api, submitAttendance, getEventAttendees } from '../services/api'; // Update import to use named import
 import LogoutButton from '../components/LogoutButton';
 import AttendanceModal from '../components/AttendanceModal';
 import Certificate from '../components/Certificate';
@@ -87,6 +87,8 @@ function CoordinatorDashboard() {
   const [activeTab, setActiveTab] = useState('club');
   // Add profile state
   const [profile, setProfile] = useState({});
+  // Add state for submit/generate loading
+  const [submittingEventId, setSubmittingEventId] = useState(null);
 
   const fetchVenueRequests = async () => {
     try {
@@ -334,6 +336,27 @@ function CoordinatorDashboard() {
       setProfile(prev => ({ ...prev, profilePic: res.data.profilePicUrl }));
     } catch (err) {
       alert('Failed to upload profile picture');
+    }
+  };
+
+  // Handler for "Submit & Generate Certificates"
+  const handleSubmitAndGenerate = async (eventId) => {
+    setSubmittingEventId(eventId);
+    try {
+      // Fetch latest attendees (with present status)
+      const data = await getEventAttendees(eventId);
+      const attendees = (data.attendees || []).map(({ _id, present }) => ({ userId: _id, present }));
+
+      // Submit attendance and generate certificates
+      await submitAttendance(eventId, attendees);
+
+      alert('Attendance submitted and certificates generated/sent!');
+      await fetchEvents();
+    } catch (err) {
+      alert('Failed to submit attendance and generate certificates.');
+      console.error(err);
+    } finally {
+      setSubmittingEventId(null);
     }
   };
 
@@ -682,23 +705,43 @@ function CoordinatorDashboard() {
                   <h4>{event.title}</h4>
                   <p><strong>Date:</strong> {new Date(event.date).toLocaleString()}</p>
                   <p><strong>Venue:</strong> {event.venue}</p>
-                  {/* Take Attendance Button */}
-                  {!event.attendanceCompleted && (
+                  
+                  {/* Attendance Buttons */}
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                    {/* Take Attendance Button */}
                     <button
-                      onClick={() => handleAttendance(event._id)}
+                      onClick={() => {
+                        if (!event.attendanceCompleted) handleAttendance(event._id);
+                      }}
                       style={{
                         padding: '8px 12px',
                         backgroundColor: '#FF5722',
                         color: 'white',
                         border: 'none',
-                        cursor: 'pointer',
-                        marginTop: '10px',
+                        cursor: event.attendanceCompleted ? 'not-allowed' : 'pointer',
                         borderRadius: '4px'
                       }}
+                      disabled={event.attendanceCompleted}
                     >
                       Take Attendance
                     </button>
-                  )}
+                    {/* Submit & Generate Certificates Button */}
+                    <button
+                      onClick={() => handleSubmitAndGenerate(event._id)}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        cursor: submittingEventId === event._id || event.attendanceCompleted ? 'not-allowed' : 'pointer',
+                        borderRadius: '4px'
+                      }}
+                      disabled={submittingEventId === event._id || event.attendanceCompleted}
+                    >
+                      {submittingEventId === event._id ? 'Processing...' : 'Submit & Generate Certificates'}
+                    </button>
+                  </div>
+                  {/* Attendance Status */}
                   {event.attendanceCompleted && (
                     <span style={{
                       display: 'inline-block',
@@ -706,9 +749,10 @@ function CoordinatorDashboard() {
                       color: 'green',
                       fontWeight: 'bold'
                     }}>
-                      Attendance Completed ✓
+                      Attendance Completed & Certificates Generated ✓
                     </span>
                   )}
+                  
                   {/* Display registered students for the event */}
                   {event.registrations && event.registrations.length > 0 && (
                     <div style={{ marginTop: '10px', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
@@ -747,6 +791,8 @@ function CoordinatorDashboard() {
             // Refresh events list to show updated attendance status
             fetchEvents();
           }}
+          // Prevent opening modal if attendanceCompleted
+          disabled={events.find(ev => ev._id === attendanceEventId)?.attendanceCompleted}
         />
       )}
     </div>

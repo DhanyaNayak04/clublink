@@ -6,32 +6,26 @@ const certificateSchema = new mongoose.Schema({
     ref: 'Event',
     required: true
   },
-  student: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  issuedDate: {
+  generatedAt: {
     type: Date,
     default: Date.now
   },
-  certificateId: {
-    type: String,
-    required: true,
-    unique: true
+  generatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  // Add field to store PDF data or path
-  pdfData: {
-    type: String  // This will store base64 encoded PDF
-  },
-  // Add field to track email status
-  emailSent: {
-    type: Boolean,
-    default: false
+  fileUrl: {
+    type: String
   }
 }, { timestamps: true });
 
-// Compound index to ensure one certificate per student per event
-certificateSchema.index({ event: 1, student: 1 }, { unique: true });
+// Compound index to ensure one certificate per user per event
+certificateSchema.index({ event: 1, user: 1 }, { unique: true });
 
 module.exports = mongoose.model('Certificate', certificateSchema);

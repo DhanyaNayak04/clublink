@@ -121,10 +121,10 @@ exports.getCertificates = async (req, res) => {
   try {
     // Import Certificate model
     const Certificate = require('../models/Certificate');
-    
+
     // Find certificates for the authenticated user
-    const certificates = await Certificate.find({ 
-      student: req.user._id 
+    const certificates = await Certificate.find({
+      user: req.user._id
     })
       .populate({
         path: 'event',
@@ -134,8 +134,8 @@ exports.getCertificates = async (req, res) => {
           select: 'name'
         }
       })
-      .sort({ issuedDate: -1 });
-    
+      .sort({ generatedAt: -1 });
+
     // Format certificates for response
     const formattedCertificates = certificates.map(cert => ({
       _id: cert._id,
@@ -144,11 +144,11 @@ exports.getCertificates = async (req, res) => {
       date: cert.event?.date,
       venue: cert.event?.venue,
       clubName: cert.event?.club?.name || 'College Club',
-      certificateId: cert.certificateId,
-      issueDate: cert.issuedDate,
-      emailSent: cert.emailSent
+      certificateId: cert._id,
+      issueDate: cert.generatedAt,
+      fileUrl: cert.fileUrl
     }));
-    
+
     res.json(formattedCertificates);
   } catch (error) {
     console.error('Error fetching certificates:', error);

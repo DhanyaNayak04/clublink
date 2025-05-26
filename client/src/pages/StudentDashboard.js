@@ -232,10 +232,10 @@ function StudentDashboard() {
                 <div>
                   <h4 style={{ margin: '0 0 8px 0' }}>{cert.eventTitle || 'Event Certificate'}</h4>
                   <p style={{ margin: 0, color: '#666' }}>
-                    Issued on: {new Date(cert.issueDate).toLocaleDateString()}
+                    Issued on: {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString() : ''}
                   </p>
                   <p style={{ margin: 0, color: '#666', fontSize: '0.9em' }}>
-                    Certificate ID: {cert.certificateId}
+                    Certificate ID: {cert._id}
                   </p>
                   <p style={{ margin: '5px 0 0', color: '#666' }}>
                     Organized by: {cert.clubName}
@@ -243,7 +243,7 @@ function StudentDashboard() {
                 </div>
                 <button
                   onClick={() => {
-                    // Create certificate object with event data for certificate view
+                    // Pass certificate data to modal
                     const certEvent = {
                       title: cert.eventTitle,
                       date: cert.date,
